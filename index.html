@@ -3,30 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Explainable AI on Ames Housing — Model Desk</title>
+<title>Model Blueprint: Ames Housing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:        #0A0D12;
-    --panel:     #10151C;
-    --panel-2:   #141B24;
-    --line:      #212B37;
-    --text:      #E7ECF1;
-    --muted:     #8493A3;
-    --dim:       #566274;
-    --gold:      #C9A24B;
-    --gold-dim:  #7A6631;
-    --rf:        #6FE3C4;
-    --xgb:       #F2777A;
-    --lr:        #5B93F2;
-    --up:        #6FE3C4;
-    --down:      #F2777A;
+    --blue:        #123B65;
+    --blue-deep:   #0C2C4C;
+    --blue-panel:  #0F3157;
+    --grid-line:   rgba(207,232,247,0.06);
+    --grid-line-2: rgba(207,232,247,0.11);
+    --ink:         #E7F1FA;
+    --ink-dim:     #93B4D1;
+    --ink-dimmer:  #5D80A0;
+    --red:         #E2543D;
+    --red-dim:     rgba(226,84,61,0.35);
+    --rf:          #7FD9A6;
+    --xgb:         #63C7E8;
+    --lr:          #E2543D;
   }
 
   *{ box-sizing:border-box; margin:0; padding:0; }
-
   html{ scroll-behavior:smooth; }
   @media (prefers-reduced-motion:reduce){
     html{ scroll-behavior:auto; }
@@ -34,628 +32,527 @@
   }
 
   body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Inter', sans-serif;
-    line-height:1.6;
+    background:var(--blue);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.65;
     -webkit-font-smoothing:antialiased;
   }
 
-  h1,h2,h3{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.01em; }
-  .mono{ font-family:'JetBrains Mono', monospace; }
-
+  h1, h2, .wordmark{ font-family:'Big Shoulders Display', sans-serif; text-transform:uppercase; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
   a{ color:inherit; text-decoration:none; }
+  code{ font-family:'IBM Plex Mono', monospace; font-size:0.92em; color:var(--xgb); }
 
-  /* ---------- background texture ---------- */
+  /* ---------- blueprint grid backdrop ---------- */
   .grid-bg{
     position:fixed; inset:0; z-index:0; pointer-events:none;
     background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size:64px 64px;
-    mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, black 30%, transparent 75%);
+      linear-gradient(var(--grid-line-2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-2) 1px, transparent 1px),
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:160px 160px, 160px 160px, 20px 20px, 20px 20px;
   }
 
-  /* ---------- layout shell ---------- */
-  .shell{
-    position:relative; z-index:1;
-    display:grid;
-    grid-template-columns:240px 1fr;
-    max-width:1400px;
-    margin:0 auto;
-  }
+  /* ---------- registration marks ---------- */
+  .reg-mark{ position:fixed; width:18px; height:18px; z-index:5; pointer-events:none; }
+  .reg-mark::before, .reg-mark::after{ content:''; position:absolute; background:var(--ink-dimmer); }
+  .reg-mark::before{ top:50%; left:0; right:0; height:1px; transform:translateY(-0.5px); }
+  .reg-mark::after{ left:50%; top:0; bottom:0; width:1px; transform:translateX(-0.5px); }
+  .reg-tl{ top:14px; left:14px; } .reg-tr{ top:14px; right:14px; }
+  .reg-bl{ bottom:14px; left:14px; } .reg-br{ bottom:14px; right:14px; }
+  @media (max-width:640px){ .reg-mark{ display:none; } }
 
-  /* ---------- sidebar nav ---------- */
-  .sidenav{
-    position:sticky; top:0; height:100vh;
-    padding:32px 0 32px 32px;
-    display:flex; flex-direction:column;
-    border-right:1px solid var(--line);
+  /* ---------- title block ---------- */
+  .title-block{
+    position:sticky; top:0; z-index:10;
+    background:rgba(12,44,76,0.94); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--grid-line-2);
   }
-  .sidenav .brand{
-    font-family:'JetBrains Mono', monospace;
-    font-size:12px; color:var(--gold);
-    letter-spacing:0.12em;
-    margin-bottom:40px;
+  .title-block-inner{
+    max-width:1200px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px; gap:24px;
   }
-  .sidenav .brand span{ color:var(--dim); }
-
-  .navlist{ list-style:none; display:flex; flex-direction:column; gap:2px; flex:1; }
-  .navlist li{ position:relative; }
-  .navlist a{
-    display:flex; align-items:baseline; gap:10px;
-    font-size:13px; color:var(--muted);
-    padding:9px 20px 9px 0;
-    font-family:'JetBrains Mono', monospace;
-    transition:color .2s ease;
-    border-left:2px solid transparent;
-    padding-left:16px;
+  .wordmark{ font-size:20px; font-weight:700; letter-spacing:0.01em; white-space:nowrap; }
+  .wordmark span{ color:var(--ink-dimmer); font-weight:600; }
+  .dwg-info{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-dimmer);
+    letter-spacing:0.06em; display:flex; gap:16px; white-space:nowrap;
   }
-  .navlist a .num{ color:var(--dim); font-size:11px; min-width:18px; }
-  .navlist a:hover{ color:var(--text); }
-  .navlist li.active a{ color:var(--text); border-left-color:var(--gold); }
-  .navlist li.active a .num{ color:var(--gold); }
-
-  .sidenav .foot{
-    font-family:'JetBrains Mono', monospace;
-    font-size:10.5px; color:var(--dim);
-    padding-right:24px; line-height:1.7;
-    border-top:1px solid var(--line);
-    padding-top:16px;
+  .tabs{
+    display:flex; gap:2px; overflow-x:auto; max-width:100%;
+    scrollbar-width:none;
   }
-
-  /* mobile top nav */
-  .topnav{ display:none; }
-
-  /* ---------- main column ---------- */
-  main{ min-width:0; }
-
-  section{
-    padding:96px 56px;
-    border-bottom:1px solid var(--line);
-    scroll-margin-top:24px;
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tabs a{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-dimmer);
+    padding:8px 12px; white-space:nowrap; border-bottom:2px solid transparent;
+    transition:color .15s ease;
   }
+  .tabs a:hover{ color:var(--ink); }
+  .tabs a.active{ color:var(--ink); border-bottom-color:var(--red); }
+
+  /* ---------- layout ---------- */
+  main{ position:relative; z-index:1; max-width:1200px; margin:0 auto; }
+  section{ padding:88px 28px; border-bottom:1px solid var(--grid-line-2); scroll-margin-top:60px; }
   section:last-of-type{ border-bottom:none; }
 
-  .eyebrow{
-    font-family:'JetBrains Mono', monospace;
-    font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
-    color:var(--gold); margin-bottom:16px; display:flex; align-items:center; gap:10px;
+  .sheet-head{ display:flex; align-items:center; gap:14px; margin-bottom:28px; }
+  .sheet-head .tick{ width:1px; height:12px; background:var(--ink-dimmer); flex-shrink:0; }
+  .sheet-head .rule{ flex:1; height:1px; background:var(--ink-dimmer); }
+  .sheet-head .sheet-no{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:0.14em;
+    color:var(--ink-dimmer); white-space:nowrap; text-transform:uppercase;
   }
-  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--gold); }
 
-  h2.section-title{ font-size:32px; font-weight:600; margin-bottom:20px; }
-  .lede{ color:var(--muted); font-size:16px; max-width:640px; margin-bottom:48px; }
+  h2.title{ font-size:clamp(28px, 3.4vw, 40px); font-weight:700; margin-bottom:18px; line-height:1.05; }
+  .lede{ color:var(--ink-dim); font-size:15.5px; max-width:620px; margin-bottom:44px; }
 
   /* ---------- hero ---------- */
-  .hero{ padding-top:88px; padding-bottom:0; border-bottom:none; }
+  .hero{ padding-top:72px; }
   .hero-kicker{
-    font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--dim);
-    letter-spacing:0.1em; text-transform:uppercase; margin-bottom:28px;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-dimmer);
+    letter-spacing:0.14em; text-transform:uppercase; margin-bottom:24px;
   }
   .hero h1{
-    font-size:clamp(38px, 5vw, 62px);
-    font-weight:700; line-height:1.05;
-    max-width:820px;
-    margin-bottom:24px;
+    font-size:clamp(40px, 6.4vw, 76px); font-weight:800; line-height:0.98;
+    max-width:900px; margin-bottom:8px;
   }
-  .hero h1 em{ font-style:normal; color:var(--gold); }
-  .hero p.desc{ color:var(--muted); font-size:17px; max-width:600px; margin-bottom:48px; }
+  .hero h1 .accent{ color:var(--red); }
+  .scribble-wrap{ position:relative; display:inline-block; margin-bottom:28px; }
+  .scribble{
+    font-family:'Caveat', cursive; font-weight:600; font-size:22px;
+    color:var(--red); transform:rotate(-2deg); display:inline-block;
+  }
+  .hero p.desc{ color:var(--ink-dim); font-size:16.5px; max-width:600px; margin-bottom:40px; }
 
-  .tag-row{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:56px; }
-  .tag{
-    font-family:'JetBrains Mono', monospace; font-size:11.5px;
-    border:1px solid var(--line); color:var(--muted);
-    padding:6px 12px; border-radius:100px;
+  .dim-tags{ display:flex; flex-wrap:wrap; gap:10px 0; margin-bottom:8px; }
+  .dim-tag{
+    display:flex; align-items:center; font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px; color:var(--ink-dim); white-space:nowrap; margin-right:4px;
   }
+  .dim-tag .cap{ color:var(--ink-dimmer); }
+  .dim-tag .cap::before{ content:'|'; margin:0 8px; color:var(--ink-dimmer); }
+  .dim-tag .cap::after{ content:'|'; margin:0 8px; color:var(--ink-dimmer); }
 
-  /* ---------- ticker (signature element) ---------- */
-  .ticker-wrap{
-    border-top:1px solid var(--line);
-    border-bottom:1px solid var(--line);
-    background:var(--panel);
-    overflow:hidden;
-    position:relative;
+  /* ---------- spec plate ---------- */
+  .spec-plate{
+    max-width:1200px; margin:0 auto; padding:0 28px 88px;
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;
+    background:var(--grid-line-2);
+    border:1px solid var(--grid-line-2);
   }
-  .ticker-wrap::before, .ticker-wrap::after{
-    content:''; position:absolute; top:0; bottom:0; width:60px; z-index:2;
+  @media (max-width:760px){ .spec-plate{ grid-template-columns:1fr; } }
+  .plate-cell{
+    background:var(--blue-deep); padding:22px 24px; position:relative;
   }
-  .ticker-wrap::before{ left:0; background:linear-gradient(90deg, var(--panel), transparent); }
-  .ticker-wrap::after{ right:0; background:linear-gradient(270deg, var(--panel), transparent); }
+  .plate-cell::before, .plate-cell::after{
+    content:''; position:absolute; width:5px; height:5px; border-radius:50%;
+    background:var(--grid-line-2); top:10px;
+  }
+  .plate-cell::before{ left:10px; } .plate-cell::after{ right:10px; }
+  .plate-model{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .plate-model .dot{ width:8px; height:8px; border-radius:50%; }
+  .plate-model span{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.08em; font-weight:600; }
+  .plate-row{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:13px; padding:5px 0; color:var(--ink-dim); }
+  .plate-row b{ color:var(--ink); font-weight:600; }
+  .plate-row.r2-neg b{ color:var(--red); }
+  .plate-row.r2-pos b{ color:var(--rf); }
 
-  .ticker-track{
-    display:flex; width:max-content;
-    animation:scroll-left 38s linear infinite;
+  /* ---------- dimension chain (pipeline) ---------- */
+  .dim-chain{ position:relative; padding-left:46px; }
+  .dim-chain::before{
+    content:''; position:absolute; left:11px; top:6px; bottom:6px; width:1px;
+    background:var(--ink-dimmer);
   }
-  .ticker-track:hover{ animation-play-state:paused; }
-  @keyframes scroll-left{
-    from{ transform:translateX(0); }
-    to{ transform:translateX(-50%); }
+  .dim-step{ position:relative; padding-bottom:36px; }
+  .dim-step:last-child{ padding-bottom:0; }
+  .dim-node{
+    position:absolute; left:-46px; top:2px; width:23px; height:23px;
+    border:1px solid var(--ink-dimmer); background:var(--blue-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-dim);
   }
-  .ticker-item{
-    display:flex; align-items:center; gap:14px;
-    padding:16px 32px;
-    border-right:1px solid var(--line);
-    font-family:'JetBrains Mono', monospace;
-    font-size:13px; white-space:nowrap;
-  }
-  .ticker-item .dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  .ticker-item .model-name{ color:var(--text); font-weight:600; }
-  .ticker-item .metric{ color:var(--dim); }
-  .ticker-item .metric b{ font-weight:600; }
-  .ticker-item .up{ color:var(--up); }
-  .ticker-item .down{ color:var(--down); }
+  .dim-step h3{ font-size:16px; font-weight:600; margin-bottom:6px; font-family:'IBM Plex Sans'; }
+  .dim-step p{ color:var(--ink-dim); font-size:14.5px; max-width:640px; }
 
-  /* ---------- pipeline ---------- */
-  .pipeline{
-    display:flex; flex-direction:column;
-    border:1px solid var(--line); border-radius:4px; overflow:hidden;
+  /* ---------- spec table ---------- */
+  .spec-table{ width:100%; border-collapse:collapse; border:1px solid var(--grid-line-2); }
+  .spec-table th, .spec-table td{ padding:15px 18px; text-align:left; border-bottom:1px solid var(--grid-line-2); font-size:14px; }
+  .spec-table thead th{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--ink-dimmer); background:var(--blue-deep);
   }
-  .pipe-step{
-    display:grid; grid-template-columns:64px 1fr;
-    border-bottom:1px solid var(--line);
-    background:var(--panel);
-  }
-  .pipe-step:last-child{ border-bottom:none; }
-  .pipe-step .idx{
-    font-family:'JetBrains Mono', monospace; color:var(--gold-dim);
-    font-size:22px; font-weight:600;
-    display:flex; align-items:flex-start; justify-content:center;
-    padding-top:24px;
-    border-right:1px solid var(--line);
-  }
-  .pipe-step .content{ padding:24px 28px; }
-  .pipe-step h3{ font-size:16px; font-weight:600; margin-bottom:6px; }
-  .pipe-step p{ color:var(--muted); font-size:14.5px; max-width:640px; }
-  .pipe-step code{
-    font-family:'JetBrains Mono', monospace; font-size:12.5px;
-    background:var(--panel-2); border:1px solid var(--line);
-    padding:1px 6px; border-radius:3px; color:var(--gold);
-  }
-
-  /* ---------- performance table ---------- */
-  .perf-table{ width:100%; border-collapse:collapse; border:1px solid var(--line); }
-  .perf-table th, .perf-table td{
-    padding:16px 20px; text-align:left; border-bottom:1px solid var(--line);
-    font-size:14px;
-  }
-  .perf-table thead th{
-    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--dim); background:var(--panel);
-  }
-  .perf-table td.mono, .perf-table th.mono{ font-family:'JetBrains Mono', monospace; }
-  .perf-table tr:last-child td{ border-bottom:none; }
+  .spec-table td.mono, .spec-table th.mono{ font-family:'IBM Plex Mono', monospace; }
+  .spec-table tr:last-child td{ border-bottom:none; }
   .model-chip{ display:flex; align-items:center; gap:10px; font-weight:600; }
-  .model-chip .dot{ width:9px; height:9px; border-radius:50%; }
-  .r2-neg{ color:var(--down); }
-  .r2-pos{ color:var(--up); }
-  .best-badge{
-    font-family:'JetBrains Mono', monospace; font-size:10px;
-    color:var(--gold); border:1px solid var(--gold-dim);
-    padding:2px 6px; border-radius:3px; margin-left:8px;
+  .model-chip .dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .r2-neg{ color:var(--red); }
+  .r2-pos{ color:var(--rf); }
+  .stamp{
+    font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:0.08em;
+    color:var(--rf); border:1px solid var(--rf); padding:2px 6px; margin-left:8px;
   }
 
-  /* ---------- figure blocks ---------- */
-  .figure{
-    background:var(--panel); border:1px solid var(--line); border-radius:4px;
-    padding:20px; margin-bottom:28px;
-  }
-  .figure img{ width:100%; height:auto; display:block; border-radius:2px; }
+  /* ---------- figures ---------- */
+  .figure{ border:1px solid var(--grid-line-2); background:var(--blue-deep); padding:18px; margin-bottom:8px; }
+  .figure img{ width:100%; height:auto; display:block; }
   .figure-cap{
-    display:flex; justify-content:space-between; align-items:baseline;
-    margin-top:16px; padding-top:16px; border-top:1px solid var(--line);
-  }
-  .figure-cap .label{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--dim); }
-
-  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
-  @media (max-width:900px){ .two-col{ grid-template-columns:1fr; } }
-
-  .insight-box{
-    background:var(--panel-2); border-left:2px solid var(--gold);
-    padding:16px 20px; margin-top:8px;
-    font-size:14px; color:var(--muted);
-  }
-  .insight-box b{ color:var(--text); font-weight:600; }
-  .insight-box .lbl{
-    font-family:'JetBrains Mono', monospace; font-size:10.5px;
-    letter-spacing:0.1em; text-transform:uppercase; color:var(--gold);
-    display:block; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;
+    margin-top:14px; padding-top:14px; border-top:1px solid var(--grid-line-2);
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-dimmer);
   }
 
-  /* ---------- shap detail ---------- */
-  .shap-legend{ display:flex; gap:24px; margin-bottom:20px; flex-wrap:wrap; }
-  .shap-legend .item{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); font-family:'JetBrains Mono', monospace; }
-  .shap-legend .dot{ width:10px; height:10px; border-radius:2px; }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:820px){ .two-col{ grid-template-columns:1fr; } }
 
-  /* ---------- summary ---------- */
-  .summary-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:2px; background:var(--line); border:1px solid var(--line); }
-  @media (max-width:900px){ .summary-grid{ grid-template-columns:1fr; } }
-  .summary-card{ background:var(--panel); padding:28px; }
-  .summary-card .tick{ font-family:'JetBrains Mono', monospace; color:var(--gold); font-size:13px; margin-bottom:10px; display:block; }
-  .summary-card h3{ font-size:16px; margin-bottom:10px; }
-  .summary-card p{ color:var(--muted); font-size:14px; }
+  /* ---------- field notes (redline annotations) ---------- */
+  .field-note{
+    background:var(--blue-deep); border-left:3px solid var(--red);
+    padding:16px 20px; margin-top:24px; font-size:14px; color:var(--ink-dim);
+  }
+  .field-note .tag{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--red); display:block; margin-bottom:8px;
+  }
+  .field-note b{ color:var(--ink); font-weight:600; }
+
+  .legend-row{ display:flex; gap:22px; margin-bottom:20px; flex-wrap:wrap; }
+  .legend-row .item{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-dim); font-family:'IBM Plex Mono', monospace; }
+  .legend-row .sw{ width:11px; height:11px; }
+
+  /* ---------- summary stamps ---------- */
+  .stamp-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; background:var(--grid-line-2); border:1px solid var(--grid-line-2); }
+  @media (max-width:820px){ .stamp-grid{ grid-template-columns:1fr; } }
+  .stamp-card{ background:var(--blue-deep); padding:26px 28px; }
+  .stamp-card .no{
+    font-family:'IBM Plex Mono', monospace; color:var(--ink-dimmer); font-size:12px;
+    display:block; margin-bottom:10px; letter-spacing:0.1em;
+  }
+  .stamp-card h3{ font-size:16px; margin-bottom:10px; font-weight:600; }
+  .stamp-card p{ color:var(--ink-dim); font-size:14px; }
 
   footer{
-    padding:48px 56px; text-align:left;
-    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--dim);
+    max-width:1200px; margin:0 auto; padding:40px 28px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-dimmer);
   }
 
-  /* ---------- responsive ---------- */
-  @media (max-width:900px){
-    .shell{ grid-template-columns:1fr; }
-    .sidenav{ display:none; }
-    .topnav{
-      display:block; position:sticky; top:0; z-index:10;
-      background:rgba(10,13,18,0.92); backdrop-filter:blur(8px);
-      border-bottom:1px solid var(--line);
-      overflow-x:auto; white-space:nowrap;
-      padding:14px 20px;
-    }
-    .topnav a{
-      font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--muted);
-      margin-right:22px; padding-bottom:4px; border-bottom:2px solid transparent;
-    }
-    .topnav a.active{ color:var(--text); border-bottom-color:var(--gold); }
-    section{ padding:64px 24px; }
-    .hero{ padding-top:48px; }
+  a:focus-visible, .tabs a:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+
+  @media (max-width:640px){
+    section{ padding:56px 20px; }
+    .title-block-inner{ padding:12px 18px; }
+    .dwg-info{ display:none; }
+    .spec-plate{ padding:0 20px 56px; }
+    footer{ padding:32px 20px; }
   }
 </style>
 </head>
 <body>
 
 <div class="grid-bg"></div>
+<span class="reg-mark reg-tl"></span>
+<span class="reg-mark reg-tr"></span>
+<span class="reg-mark reg-bl"></span>
+<span class="reg-mark reg-br"></span>
 
-<nav class="topnav" id="topnav">
-  <a href="#hero" data-nav>Top</a>
-  <a href="#pipeline" data-nav>Pipeline</a>
-  <a href="#performance" data-nav>Performance</a>
-  <a href="#importance" data-nav>Importance</a>
-  <a href="#pdp" data-nav>Profiles</a>
-  <a href="#shap" data-nav>SHAP</a>
-  <a href="#summary" data-nav>Summary</a>
-</nav>
-
-<div class="shell">
-
-  <aside class="sidenav">
-    <div class="brand">AMES<span>·</span>XAI<br><span>model explainability desk</span></div>
-    <ul class="navlist">
-      <li><a href="#hero" data-nav><span class="num">00</span>Overview</a></li>
-      <li><a href="#pipeline" data-nav><span class="num">01</span>Pipeline</a></li>
-      <li><a href="#performance" data-nav><span class="num">02</span>Performance</a></li>
-      <li><a href="#importance" data-nav><span class="num">03</span>Variable Importance</a></li>
-      <li><a href="#pdp" data-nav><span class="num">04</span>Partial Dependence</a></li>
-      <li><a href="#shap" data-nav><span class="num">05</span>SHAP — Local</a></li>
-      <li><a href="#summary" data-nav><span class="num">06</span>Summary</a></li>
-    </ul>
-    <div class="foot">
-      dalex · scikit-learn · xgboost<br>
-      target: log(SalePrice)<br>
-      test set: 586 obs
+<header class="title-block">
+  <div class="title-block-inner">
+    <div class="wordmark">MODEL <span>BLUEPRINT</span></div>
+    <nav class="tabs" id="tabs">
+      <a href="#hero" data-nav>Overview</a>
+      <a href="#pipeline" data-nav>Pipeline</a>
+      <a href="#performance" data-nav>Performance</a>
+      <a href="#importance" data-nav>Importance</a>
+      <a href="#pdp" data-nav>Profiles</a>
+      <a href="#shap" data-nav>Shap</a>
+      <a href="#summary" data-nav>Summary</a>
+    </nav>
+    <div class="dwg-info">
+      <span>DWG AMES-XAI-01</span>
+      <span>TARGET LOG(SALEPRICE)</span>
     </div>
-  </aside>
+  </div>
+</header>
 
-  <main>
+<main>
 
-    <!-- HERO -->
-    <section class="hero" id="hero">
-      <div class="hero-kicker">Case study — regression explainability</div>
-      <h1>Three models priced the same house. <em>Here's why they disagreed.</em></h1>
-      <p class="desc">
-        A tri-model comparison on the Ames Housing dataset — Random Forest, XGBoost,
-        and Linear Regression — pulled apart with <span class="mono">dalex</span> to see which
-        features drive price, how each model behaves outside the dense region of the data,
-        and why a linear fit collapses where the tree-based models hold up.
-      </p>
-      <div class="tag-row">
-        <span class="tag">2,930 properties</span>
-        <span class="tag">82 raw features</span>
-        <span class="tag">MICE-XGBoost imputation</span>
-        <span class="tag">Variable Importance</span>
-        <span class="tag">Partial Dependence</span>
-        <span class="tag">SHAP</span>
+  <section class="hero" id="hero">
+    <div class="hero-kicker">Field report / regression explainability</div>
+    <h1>Three models priced<br>the same house.<br><span class="accent">Only one held up.</span></h1>
+    <div class="scribble-wrap"><span class="scribble">see the redlines below ↓</span></div>
+    <p class="desc">
+      A tri-model comparison on the Ames Housing dataset: Random Forest, XGBoost, and
+      Linear Regression, inspected with <code>dalex</code> to see which features drive price,
+      how each model behaves once the data runs thin, and where a linear fit comes apart
+      that the tree-based models simply do not.
+    </p>
+    <div class="dim-tags">
+      <span class="dim-tag"><span class="cap">2,930 properties</span></span>
+      <span class="dim-tag"><span class="cap">82 raw features</span></span>
+      <span class="dim-tag"><span class="cap">MICE-XGBoost imputation</span></span>
+      <span class="dim-tag"><span class="cap">SHAP + PDP + importance</span></span>
+    </div>
+  </section>
+
+  <div class="spec-plate">
+    <div class="plate-cell">
+      <div class="plate-model"><span class="dot" style="background:var(--xgb)"></span><span>XGBOOST</span></div>
+      <div class="plate-row"><span>MAE</span><b>$14,102</b></div>
+      <div class="plate-row"><span>RMSE</span><b>$25,294</b></div>
+      <div class="plate-row r2-pos"><span>R2</span><b>0.9025</b></div>
+    </div>
+    <div class="plate-cell">
+      <div class="plate-model"><span class="dot" style="background:var(--rf)"></span><span>RANDOM FOREST</span></div>
+      <div class="plate-row"><span>MAE</span><b>$19,488</b></div>
+      <div class="plate-row"><span>RMSE</span><b>$32,331</b></div>
+      <div class="plate-row r2-pos"><span>R2</span><b>0.8408</b></div>
+    </div>
+    <div class="plate-cell">
+      <div class="plate-model"><span class="dot" style="background:var(--lr)"></span><span>LINEAR REGRESSION</span></div>
+      <div class="plate-row"><span>MAE</span><b>$172,903</b></div>
+      <div class="plate-row"><span>RMSE</span><b>$190,074</b></div>
+      <div class="plate-row r2-neg"><span>R2</span><b>-4.5030</b></div>
+    </div>
+  </div>
+
+  <section id="pipeline">
+    <div class="sheet-head"><span class="tick"></span><span class="rule"></span><span class="sheet-no">Sheet 01 · Method</span><span class="rule"></span><span class="tick"></span></div>
+    <h2 class="title">Six stages, one leakage rule</h2>
+    <p class="lede">
+      Every stage below is fit on the training split first and only then applied to test.
+      That single rule is what keeps the numbers on the spec plate above honest.
+    </p>
+
+    <div class="dim-chain">
+      <div class="dim-step">
+        <div class="dim-node">01</div>
+        <h3>Load and inspect</h3>
+        <p>2,930 rows across 82 columns from the Ames Housing dataset. First pass checks dtypes, cardinality, and the shape of <code>SalePrice</code> before touching missingness.</p>
       </div>
-    </section>
-
-    <!-- TICKER -->
-    <div class="ticker-wrap">
-      <div class="ticker-track" id="tickerTrack">
-        <!-- populated via JS, duplicated for seamless loop -->
+      <div class="dim-step">
+        <div class="dim-node">02</div>
+        <h3>Structural missingness</h3>
+        <p>Domain logic separates real gaps from encoded absence. <code>Pool QC</code> is blank because there is no pool, not because the value is unknown. Those are flagged before any statistical imputation runs.</p>
+      </div>
+      <div class="dim-step">
+        <div class="dim-node">03</div>
+        <h3>Train / test split</h3>
+        <p>2,344 training observations, 586 held out and untouched until final evaluation.</p>
+      </div>
+      <div class="dim-step">
+        <div class="dim-node">04</div>
+        <h3>MICE-XGBoost imputation</h3>
+        <p>Remaining Missing-at-Random gaps (e.g. <code>Lot Frontage</code>) are imputed with a fit/transform pattern. The imputer learns only from training data, then transforms test data, closing off leakage through the back door.</p>
+      </div>
+      <div class="dim-step">
+        <div class="dim-node">05</div>
+        <h3>Tri-model training</h3>
+        <p>Categoricals are one-hot encoded on train and aligned onto test. Target is <code>log(SalePrice)</code> to tame right skew. Linear Regression drops <code>Total Bsmt SF</code>, an exact sum of three other basement columns, to avoid perfect multicollinearity. The tree models keep the full feature set.</p>
+      </div>
+      <div class="dim-step">
+        <div class="dim-node">06</div>
+        <h3>Explain with dalex</h3>
+        <p>Explainers are built on the held-out test set, with predictions converted back from log-dollars to dollars. Three lenses: variable importance, partial dependence, and per-observation SHAP.</p>
       </div>
     </div>
+  </section>
 
-    <!-- PIPELINE -->
-    <section id="pipeline">
-      <div class="eyebrow">01 — Method</div>
-      <h2 class="section-title">Six stages, one leakage rule</h2>
-      <p class="lede">
-        Every stage below is fit on the training split first and only then applied to test —
-        the rule that keeps the numbers in section 02 honest.
-      </p>
+  <section id="performance">
+    <div class="sheet-head"><span class="tick"></span><span class="rule"></span><span class="sheet-no">Sheet 02 · Scoreboard</span><span class="rule"></span><span class="tick"></span></div>
+    <h2 class="title">Test-set performance, in dollars</h2>
+    <p class="lede">Metrics are computed after inverting the log transform, so error reads directly against sale price.</p>
 
-      <div class="pipeline">
-        <div class="pipe-step">
-          <div class="idx">01</div>
-          <div class="content">
-            <h3>Load &amp; inspect</h3>
-            <p>2,930 rows × 82 columns from the Ames Housing dataset. First pass checks dtypes, cardinality, and the shape of <code>SalePrice</code> before touching missingness.</p>
-          </div>
-        </div>
-        <div class="pipe-step">
-          <div class="idx">02</div>
-          <div class="content">
-            <h3>Structural missingness</h3>
-            <p>Domain logic separates real gaps from encoded absence — <code>Pool QC</code> is blank because there's no pool, not because the value is unknown. Those get flagged before any statistical imputation runs.</p>
-          </div>
-        </div>
-        <div class="pipe-step">
-          <div class="idx">03</div>
-          <div class="content">
-            <h3>Train / test split</h3>
-            <p>2,344 training observations, 586 held out — untouched until final evaluation.</p>
-          </div>
-        </div>
-        <div class="pipe-step">
-          <div class="idx">04</div>
-          <div class="content">
-            <h3>MICE-XGBoost imputation</h3>
-            <p>Remaining Missing-at-Random gaps (e.g. <code>Lot Frontage</code>) are imputed with a fit/transform pattern — the imputer learns only from training data, then transforms test data, closing off leakage through the back door.</p>
-          </div>
-        </div>
-        <div class="pipe-step">
-          <div class="idx">05</div>
-          <div class="content">
-            <h3>Tri-model training</h3>
-            <p>Categoricals are one-hot encoded on train and aligned onto test. Target is <code>log(SalePrice)</code> to tame right skew. Linear Regression drops <code>Total Bsmt SF</code> — an exact sum of three other basement columns — to avoid perfect multicollinearity; the tree models keep the full feature set.</p>
-          </div>
-        </div>
-        <div class="pipe-step">
-          <div class="idx">06</div>
-          <div class="content">
-            <h3>Explain with dalex</h3>
-            <p>Explainers are built on the held-out test set, with predictions back-transformed from log-dollars to dollars. Three lenses: variable importance, partial dependence, and per-observation SHAP.</p>
-          </div>
-        </div>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th class="mono">MAE</th>
+          <th class="mono">RMSE</th>
+          <th class="mono">R2</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="model-chip"><span class="dot" style="background:var(--xgb)"></span>XGBoost <span class="stamp">BEST FIT</span></span></td>
+          <td class="mono">$14,102</td>
+          <td class="mono">$25,294</td>
+          <td class="mono r2-pos">0.9025</td>
+        </tr>
+        <tr>
+          <td><span class="model-chip"><span class="dot" style="background:var(--rf)"></span>Random Forest</span></td>
+          <td class="mono">$19,488</td>
+          <td class="mono">$32,331</td>
+          <td class="mono r2-pos">0.8408</td>
+        </tr>
+        <tr>
+          <td><span class="model-chip"><span class="dot" style="background:var(--lr)"></span>Linear Regression</span></td>
+          <td class="mono">$172,903</td>
+          <td class="mono">$190,074</td>
+          <td class="mono r2-neg">-4.5030</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="field-note">
+      <span class="tag">Field note</span>
+      A negative R2 means Linear Regression's predictions land worse than simply guessing
+      the average sale price every time. That points to bad extrapolation on this feature
+      space, not a general weakness of linear models. Sheet 04 shows exactly where it
+      comes apart.
+    </div>
+  </section>
+
+  <section id="importance">
+    <div class="sheet-head"><span class="tick"></span><span class="rule"></span><span class="sheet-no">Sheet 03 · Global</span><span class="rule"></span><span class="tick"></span></div>
+    <h2 class="title">What each model leans on</h2>
+    <p class="lede">
+      Drop-out loss: how much test-set error increases once a feature's values get shuffled.
+      Bigger bar, heavier the model depends on that feature.
+    </p>
+
+    <div class="figure">
+      <img src="assets/variable-importance.png" alt="Variable importance drop-out loss for Random Forest, Linear Regression, and XGBoost">
+      <div class="figure-cap"><span>dalex · model_parts() · drop-out loss</span></div>
+    </div>
+
+    <div class="field-note">
+      <span class="tag">Field note</span>
+      <b>Overall Qual</b> and <b>Gr Liv Area</b> top both tree-based models, but at very
+      different scale. Random Forest's drop-out loss for Overall Qual (+33,698) dwarfs
+      everything else in its ranking, while XGBoost spreads dependence more evenly across
+      eight or nine features. Linear Regression's bars sit an order of magnitude lower
+      across the board, consistent with a model that is not fitting the data well to begin with.
+    </div>
+  </section>
+
+  <section id="pdp">
+    <div class="sheet-head"><span class="tick"></span><span class="rule"></span><span class="sheet-no">Sheet 04 · Behavior</span><span class="rule"></span><span class="tick"></span></div>
+    <h2 class="title">Same feature, different stories</h2>
+    <p class="lede">
+      Each curve holds every other feature fixed and sweeps one variable, showing how a
+      model's prediction moves in isolation.
+    </p>
+
+    <div class="figure">
+      <img src="assets/pdp-overallqual.png" alt="Partial dependence profile for Overall Qual across three models">
+      <div class="figure-cap"><span>Overall Qual, 1 to 10 rating</span></div>
+    </div>
+    <div class="field-note">
+      <span class="tag">Field note</span>
+      Random Forest and XGBoost step up in discrete jumps as quality rating rises,
+      roughly <span class="mono">$50k to $250k</span> across the range, because quality is
+      really a small set of buckets, not a continuum. Linear Regression can only draw a
+      straight line through that, so it stays nearly flat near the bottom of the chart and
+      never captures the jump.
+    </div>
+
+    <div class="figure" style="margin-top:36px;">
+      <img src="assets/pdp-grlivarea.png" alt="Partial dependence profile for Gr Liv Area across three models">
+      <div class="figure-cap"><span>Gr Liv Area, above-ground living area in square feet</span></div>
+    </div>
+    <div class="field-note">
+      <span class="tag">Field note</span>
+      Random Forest and XGBoost track each other closely, then <b>plateau</b> past roughly
+      2,500 square feet. There is little training data out there, so the trees stop
+      extrapolating and flatten out. Linear Regression has no such brake: it keeps climbing
+      indefinitely, exactly the kind of unchecked extrapolation behind the blown-up error
+      on the scoreboard.
+    </div>
+  </section>
+
+  <section id="shap">
+    <div class="sheet-head"><span class="tick"></span><span class="rule"></span><span class="sheet-no">Sheet 05 · Local</span><span class="rule"></span><span class="tick"></span></div>
+    <h2 class="title">One house, taken apart</h2>
+    <p class="lede">
+      SHAP splits a single prediction into per-feature contributions, in dollars, relative
+      to the average prediction. This is test observation 0.
+    </p>
+
+    <div class="legend-row">
+      <span class="item"><span class="sw" style="background:var(--rf)"></span>pushes price up</span>
+      <span class="item"><span class="sw" style="background:var(--red)"></span>pushes price down</span>
+    </div>
+
+    <div class="figure">
+      <img src="assets/shap-obs0.png" alt="SHAP waterfall for Random Forest and XGBoost on test observation 0">
+      <div class="figure-cap"><span>dalex · predict_parts(type=shap) · B=25</span></div>
+    </div>
+
+    <div class="two-col">
+      <div class="field-note">
+        <span class="tag">Random Forest</span>
+        For this house, <b>Overall Qual = 6.0</b> is the single biggest drag (-$13,365), a
+        mid-range rating pulling the estimate down from the model's average. <b>Gr Liv
+        Area = 1,991 sq ft</b> pushes back the other way (+$14,259), with garage capacity,
+        remodel year, and basement size contributing smaller adjustments.
       </div>
-    </section>
-
-    <!-- PERFORMANCE -->
-    <section id="performance">
-      <div class="eyebrow">02 — Scoreboard</div>
-      <h2 class="section-title">Test-set performance, in dollars</h2>
-      <p class="lede">
-        Metrics are computed after inverting the log transform, so error is directly comparable to sale price.
-      </p>
-
-      <table class="perf-table">
-        <thead>
-          <tr>
-            <th>Model</th>
-            <th class="mono">MAE</th>
-            <th class="mono">RMSE</th>
-            <th class="mono">R²</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="model-chip"><span class="dot" style="background:var(--xgb)"></span>XGBoost <span class="best-badge">BEST FIT</span></span></td>
-            <td class="mono">$14,102</td>
-            <td class="mono">$25,294</td>
-            <td class="mono r2-pos">0.9025</td>
-          </tr>
-          <tr>
-            <td><span class="model-chip"><span class="dot" style="background:var(--rf)"></span>Random Forest</span></td>
-            <td class="mono">$19,488</td>
-            <td class="mono">$32,331</td>
-            <td class="mono r2-pos">0.8408</td>
-          </tr>
-          <tr>
-            <td><span class="model-chip"><span class="dot" style="background:var(--lr)"></span>Linear Regression</span></td>
-            <td class="mono">$172,903</td>
-            <td class="mono">$190,074</td>
-            <td class="mono r2-neg">−4.5030</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="insight-box">
-        <span class="lbl">Read</span>
-        A negative R² means Linear Regression's predictions are worse than just guessing
-        the mean sale price every time — a sign it's extrapolating badly on this feature
-        space, not that linear models are inherently weak. The profile plots in section 04
-        show exactly where it comes apart.
+      <div class="field-note">
+        <span class="tag">XGBoost</span>
+        The same house reads differently here. <b>Gr Liv Area</b> is the dominant driver
+        (+$19,02x), and sitting in the <b>Crawford</b> neighborhood adds another +$8,909.
+        Overall Qual still drags the price down (-$7,668), but by less than half of what
+        Random Forest assigned it. The two models agree on direction, not on magnitude.
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- VARIABLE IMPORTANCE -->
-    <section id="importance">
-      <div class="eyebrow">03 — Global</div>
-      <h2 class="section-title">What each model leans on</h2>
-      <p class="lede">
-        Drop-out loss: how much test-set error increases when a feature's values are shuffled.
-        Bigger bar, more the model depends on that feature.
-      </p>
+  <section id="summary">
+    <div class="sheet-head"><span class="tick"></span><span class="rule"></span><span class="sheet-no">Sheet 06 · Findings</span><span class="rule"></span><span class="tick"></span></div>
+    <h2 class="title">What the inspection actually earned</h2>
 
-      <div class="figure">
-        <img src="assets/variable-importance.png" alt="Variable importance drop-out loss for Random Forest, Linear Regression, and XGBoost">
-        <div class="figure-cap">
-          <span class="label">dalex · model_parts() · drop-out loss</span>
-        </div>
+    <div class="stamp-grid">
+      <div class="stamp-card">
+        <span class="no">01</span>
+        <h3>Missingness is not one thing</h3>
+        <p>Structural gaps (no pool, no fireplace) were separated from genuine
+        Missing-at-Random values before any statistical imputation ran. Treating them the
+        same would have manufactured noise.</p>
       </div>
-
-      <div class="insight-box">
-        <span class="lbl">Read</span>
-        <b>Overall Qual</b> and <b>Gr Liv Area</b> top both tree-based models, but at very
-        different scale — Random Forest's drop-out loss for Overall Qual (+33,698) dwarfs
-        everything else in its ranking, while XGBoost spreads dependence more evenly across
-        eight or nine features. Linear Regression's bars sit an order of magnitude lower
-        across the board, consistent with a model that isn't fitting the data well to begin with.
+      <div class="stamp-card">
+        <span class="no">02</span>
+        <h3>Leakage is a process discipline</h3>
+        <p>MICE-XGBoost imputation was fit only on the training split and applied to test
+        through fit/transform, the kind of detail that stays invisible in a metric until it
+        is wrong in production.</p>
       </div>
-    </section>
-
-    <!-- PDP -->
-    <section id="pdp">
-      <div class="eyebrow">04 — Behavior</div>
-      <h2 class="section-title">Partial dependence: same feature, different stories</h2>
-      <p class="lede">
-        Each curve holds every other feature fixed and sweeps one variable — showing how a
-        model's prediction moves in isolation.
-      </p>
-
-      <div class="figure">
-        <img src="assets/pdp-overallqual.png" alt="Partial dependence profile for Overall Qual across three models">
-        <div class="figure-cap">
-          <span class="label">Overall Qual (1–10 rating)</span>
-        </div>
+      <div class="stamp-card">
+        <span class="no">03</span>
+        <h3>Collinearity hits models differently</h3>
+        <p><code>Total Bsmt SF</code> is an exact sum of three other columns: fatal for
+        Linear Regression's coefficients, a non-issue for tree-based splits.</p>
       </div>
-      <div class="insight-box" style="margin-bottom:36px;">
-        <span class="lbl">Read</span>
-        Random Forest and XGBoost step up in discrete jumps as quality rating rises —
-        <span class="mono">$50k → $250k</span> across the range — because quality is really
-        a small set of buckets, not a continuum. Linear Regression can only draw a straight
-        line through that, so it stays nearly flat near the bottom of the chart and never
-        captures the jump.
+      <div class="stamp-card">
+        <span class="no">04</span>
+        <h3>Extrapolation is where models show themselves</h3>
+        <p>Random Forest and XGBoost plateau in sparse regions of the feature space.
+        Linear Regression keeps extrapolating in a straight line, visible proof of why its
+        R2 goes negative.</p>
       </div>
+    </div>
+  </section>
 
-      <div class="figure">
-        <img src="assets/pdp-grlivarea.png" alt="Partial dependence profile for Gr Liv Area across three models">
-        <div class="figure-cap">
-          <span class="label">Gr Liv Area (above-ground living area, sq ft)</span>
-        </div>
-      </div>
-      <div class="insight-box">
-        <span class="lbl">Read</span>
-        Random Forest and XGBoost track each other closely, then <b>plateau</b> past roughly
-        2,500 sq ft — there's little training data out there, so the trees stop extrapolating
-        and flatten out. Linear Regression has no such brake: it keeps climbing indefinitely,
-        which is exactly the kind of unchecked extrapolation that produces the blown-up error
-        in the scoreboard above.
-      </div>
-    </section>
+</main>
 
-    <!-- SHAP -->
-    <section id="shap">
-      <div class="eyebrow">05 — Local</div>
-      <h2 class="section-title">One house, decomposed</h2>
-      <p class="lede">
-        SHAP breaks a single prediction into per-feature contributions, in dollars, relative
-        to the average prediction. This is test observation 0.
-      </p>
-
-      <div class="shap-legend">
-        <span class="item"><span class="dot" style="background:var(--up)"></span>pushes price up</span>
-        <span class="item"><span class="dot" style="background:var(--down)"></span>pushes price down</span>
-      </div>
-
-      <div class="figure">
-        <img src="assets/shap-obs0.png" alt="SHAP waterfall for Random Forest and XGBoost on test observation 0">
-        <div class="figure-cap">
-          <span class="label">dalex · predict_parts(type="shap") · B=25</span>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="insight-box">
-          <span class="lbl">Random Forest</span>
-          For this house, <b>Overall Qual = 6.0</b> is the single biggest drag (−$13,365) —
-          a mid-range rating pulling the estimate down from the model's average. <b>Gr Liv
-          Area = 1,991 sq ft</b> pushes back the other way (+$14,259), with Garage Cars,
-          Year Remod/Add, and basement size contributing smaller adjustments.
-        </div>
-        <div class="insight-box">
-          <span class="lbl">XGBoost</span>
-          The same house reads differently here: <b>Gr Liv Area</b> is the dominant driver
-          (+$19,02x), and being in the <b>Crawford</b> neighborhood adds another +$8,909.
-          Overall Qual still drags the price down (−$7,668), but by less than half of what
-          Random Forest assigned it — the two models agree on direction, not magnitude.
-        </div>
-      </div>
-    </section>
-
-    <!-- SUMMARY -->
-    <section id="summary">
-      <div class="eyebrow">06 — Takeaways</div>
-      <h2 class="section-title">What the explainability layer actually earned</h2>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <span class="tick">01</span>
-          <h3>Missingness isn't monolithic</h3>
-          <p>Structural gaps (no pool, no fireplace) were separated from genuine
-          Missing-at-Random values before any statistical imputation ran — treating them
-          the same would have manufactured noise.</p>
-        </div>
-        <div class="summary-card">
-          <span class="tick">02</span>
-          <h3>Leakage is a process discipline</h3>
-          <p>MICE-XGBoost imputation was fit only on the training split and applied to test
-          through fit/transform — the kind of detail that doesn't show up in a metric until
-          it's wrong in production.</p>
-        </div>
-        <div class="summary-card">
-          <span class="tick">03</span>
-          <h3>Collinearity hits models differently</h3>
-          <p><code>Total Bsmt SF</code> is an exact sum of three other columns — fatal for
-          Linear Regression's coefficients, a non-issue for tree-based splits.</p>
-        </div>
-        <div class="summary-card">
-          <span class="tick">04</span>
-          <h3>Extrapolation is where models reveal themselves</h3>
-          <p>Random Forest and XGBoost plateau in sparse regions of the feature space;
-          Linear Regression keeps extrapolating in a straight line — visible proof of why
-          its R² goes negative.</p>
-        </div>
-      </div>
-    </section>
-
-    <footer>
-      dalex explainability report · Random Forest / XGBoost / Linear Regression on Ames Housing · log(SalePrice) target
-    </footer>
-
-  </main>
-</div>
+<footer>
+  <span>dalex explainability report · random forest / xgboost / linear regression on ames housing</span>
+  <span>target log(saleprice) · test set 586 obs</span>
+</footer>
 
 <script>
-  // ---- Ticker content, built once, duplicated for a seamless loop ----
-  const tickerData = [
-    { name:'XGBOOST', color:'var(--xgb)', mae:'$14,102', rmse:'$25,294', r2:'0.9025', r2up:true },
-    { name:'RANDOM FOREST', color:'var(--rf)', mae:'$19,488', rmse:'$32,331', r2:'0.8408', r2up:true },
-    { name:'LINEAR REGRESSION', color:'var(--lr)', mae:'$172,903', rmse:'$190,074', r2:'-4.5030', r2up:false },
-  ];
-
-  function buildTickerHTML(){
-    return tickerData.map(m => `
-      <div class="ticker-item">
-        <span class="dot" style="background:${m.color}"></span>
-        <span class="model-name">${m.name}</span>
-        <span class="metric">MAE <b>${m.mae}</b></span>
-        <span class="metric">RMSE <b>${m.rmse}</b></span>
-        <span class="metric ${m.r2up ? 'up' : 'down'}">R² <b>${m.r2}</b></span>
-      </div>
-    `).join('');
-  }
-
-  const track = document.getElementById('tickerTrack');
-  track.innerHTML = buildTickerHTML() + buildTickerHTML();
-
-  // ---- Scrollspy ----
   const sections = document.querySelectorAll('main section[id]');
   const navLinks = document.querySelectorAll('[data-nav]');
 
   function setActive(id){
-    navLinks.forEach(a => {
-      const li = a.closest('li');
-      const match = a.getAttribute('href') === '#' + id;
-      a.classList.toggle('active', match);
-      if(li) li.classList.toggle('active', match);
-    });
+    navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
   }
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if(entry.isIntersecting){
-        setActive(entry.target.id);
-      }
+      if(entry.isIntersecting) setActive(entry.target.id);
     });
   }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
 
